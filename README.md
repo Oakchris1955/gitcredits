@@ -62,9 +62,9 @@ GitHub metadata (stars, description, license) requires [`gh` CLI](https://cli.gi
 
 ## Requirements
 
-- Git
-- Go 1.21+
-- [`gh` CLI](https://cli.github.com/) (optional, for GitHub metadata)
+- **git** (required) — commit history, contributors, repo info
+- **Go 1.21+** — for `go install`
+- [`gh` CLI](https://cli.github.com/) (optional) — enables GitHub stars, license, language, and description. Works without it — you'll just get git-only data.
 
 ## License
 
