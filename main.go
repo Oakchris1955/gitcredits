@@ -22,6 +22,17 @@ func main() {
 			fmt.Printf("gitcredits %s (%s)\n", version, commit)
 			os.Exit(0)
 		}
+		if arg == "--help" || arg == "-h" {
+			fmt.Println("gitcredits - Turn your Git repo into movie-style rolling credits")
+			fmt.Println()
+			fmt.Printf("Usage: gitcredits [options]\n\n")
+			fmt.Println("Options:")
+			fmt.Println("  --theme <name>   Theme: default, matrix, minimal, neon")
+			fmt.Println("  --output <file>  Export credits as GIF")
+			fmt.Println("  --version, -v    Show version")
+			fmt.Println("  --help, -h       Show this help")
+			os.Exit(0)
+		}
 		if arg == "--theme" && i+1 < len(os.Args[1:]) {
 			theme = os.Args[i+2]
 		}
