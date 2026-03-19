@@ -27,7 +27,7 @@ func main() {
 			fmt.Println()
 			fmt.Printf("Usage: gitcredits [options]\n\n")
 			fmt.Println("Options:")
-			fmt.Println("  --theme <name>   Theme: default, matrix, minimal, neon")
+			fmt.Println("  --theme <name>   Theme: default, matrix, spiderman")
 			fmt.Println("  --output <file>  Export credits as GIF")
 			fmt.Println("  --version, -v    Show version")
 			fmt.Println("  --help, -h       Show this help")
@@ -53,7 +53,11 @@ func main() {
 	// GIF output mode
 	if output != "" {
 		credits := buildCredits(info, 80)
-		cards := buildMatrixCards(info, 80, 24)
+		var cards []matrixCard
+		switch theme {
+		default:
+			cards = buildMatrixCards(info, 80, 24)
+		}
 		if err := generateGIF(output, theme, credits, len(cards)); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
@@ -74,6 +78,19 @@ func main() {
 			cards:   cards,
 			cardIdx: 0,
 			mState:  mvsRain,
+		}
+		m.initRain()
+	case "spiderman":
+		cards := buildSpidermanCards(info, width, height)
+		wf := newWebField(width, height*len(cards))
+		m = model{
+			height:   height,
+			width:    width,
+			theme:    theme,
+			cards:    cards,
+			cardIdx:  0,
+			mState:   mvsRain,
+			webField: wf,
 		}
 		m.initRain()
 	default:

@@ -15,6 +15,7 @@ const (
 	mvsResolve  = 1 // rain chars → real text
 	mvsShow     = 2 // text fully shown, dim rain bg
 	mvsDissolve = 3 // text → rain chars
+	mvsWebShot  = 4 // spider-man: web line shoots across
 )
 
 // Frame counts per state (at 50ms/frame = 20fps)
@@ -23,6 +24,7 @@ const (
 	framesResolve  = 25 // 1.25s
 	framesShow     = 50 // 2.5s
 	framesDissolve = 20 // 1s
+	framesWebShot  = 18 // 0.9s
 )
 
 // Rain column state
@@ -40,7 +42,8 @@ type model struct {
 	// default theme
 	lines     []string
 	offset    int
-	starField starField
+	starField      starField
+	webField       webField
 
 	// common
 	height int
@@ -162,7 +165,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
-		if m.theme == "matrix" {
+		if m.theme == "matrix" || m.theme == "spiderman" {
 			return m.updateMatrix()
 		}
 		m.offset++
@@ -170,7 +173,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.done = true
 			return m, tea.Quit
 		}
-		return m, tea.Tick(120*time.Millisecond, func(_ time.Time) tea.Msg {
+		tickSpeed := 120 * time.Millisecond
+		return m, tea.Tick(tickSpeed, func(_ time.Time) tea.Msg {
 			return tickMsg{}
 		})
 	}
@@ -245,6 +249,23 @@ func (m model) updateMatrix() (tea.Model, tea.Cmd) {
 			}
 		}
 		if m.mFrame >= framesDissolve {
+			if m.theme == "spiderman" {
+				m.mState = mvsWebShot
+				m.mFrame = 0
+			} else {
+				m.cardIdx++
+				if m.cardIdx >= len(m.cards) {
+					m.done = true
+					return m, tea.Quit
+				}
+				m.mState = mvsRain
+				m.mFrame = 0
+				m.resetResolve()
+			}
+		}
+	case mvsWebShot:
+		// Web shoots across, then next card
+		if m.mFrame >= framesWebShot {
 			m.cardIdx++
 			if m.cardIdx >= len(m.cards) {
 				m.done = true
@@ -267,6 +288,9 @@ func (m model) View() string {
 	}
 	if m.theme == "matrix" {
 		return m.viewMatrix()
+	}
+	if m.theme == "spiderman" {
+		return m.viewSpiderman()
 	}
 	return m.viewDefault()
 }
@@ -382,6 +406,225 @@ func (m model) viewMatrix() string {
 				}
 			}
 		}
+		if r < m.height-1 {
+			sb.WriteRune('\n')
+		}
+	}
+
+	return sb.String()
+}
+
+func (m model) viewSpiderman() string {
+	// Spider-Verse color palette
+	red := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF1744"))
+	blue := lipgloss.NewStyle().Foreground(lipgloss.Color("#2979FF"))
+	white := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
+	dimRed := lipgloss.NewStyle().Foreground(lipgloss.Color("#880E4F"))
+	dimBlue := lipgloss.NewStyle().Foreground(lipgloss.Color("#1A237E"))
+	webDim := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333"))
+	glitchRed := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF1744")).Bold(true)
+	glitchBlue := lipgloss.NewStyle().Foreground(lipgloss.Color("#2979FF")).Bold(true)
+	gold := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700")).Bold(true)
+
+	var card matrixCard
+	if m.cardIdx < len(m.cards) {
+		card = m.cards[m.cardIdx]
+	}
+
+	textTop := m.height
+	textBottom := 0
+	if m.cardIdx < len(m.cards) {
+		for r := 0; r < m.height; r++ {
+			if r < len(card.lines) && strings.TrimSpace(card.lines[r]) != "" {
+				if r < textTop {
+					textTop = r
+				}
+				if r > textBottom {
+					textBottom = r
+				}
+			}
+		}
+	}
+
+	// Glitch intensity based on state
+	var glitchIntensity float64
+	var rgbOffset int
+	switch m.mState {
+	case mvsRain:
+		glitchIntensity = 0.8
+		rgbOffset = 2
+	case mvsResolve:
+		progress := float64(m.mFrame) / float64(framesResolve)
+		glitchIntensity = 0.6 * (1.0 - progress)
+		rgbOffset = int(2.0 * (1.0 - progress))
+	case mvsShow:
+		glitchIntensity = 0.0
+		rgbOffset = 0
+		// Random glitch bursts during show
+		if rand.Intn(15) == 0 {
+			glitchIntensity = 0.3
+			rgbOffset = 1
+		}
+	case mvsDissolve:
+		progress := float64(m.mFrame) / float64(framesDissolve)
+		glitchIntensity = 0.7 * progress
+		rgbOffset = int(3.0 * progress)
+	}
+
+	var sb strings.Builder
+
+	// WebShot state: web expands radially from center
+	if m.mState == mvsWebShot {
+		progress := float64(m.mFrame) / float64(framesWebShot)
+		eased := 1.0 - (1.0-progress)*(1.0-progress)
+
+		centerX := m.width / 2
+		centerY := m.height / 2
+		maxRadius := m.width / 2
+		if m.height/2 > maxRadius {
+			maxRadius = m.height / 2
+		}
+		radius := int(eased * float64(maxRadius) * 1.5)
+
+		// THWIP!
+		showThwip := m.mFrame < framesWebShot/2
+		thwipText := "THWIP!"
+		thwipX := centerX - len(thwipText)/2
+		thwipY := centerY - 4
+
+		for r := 0; r < m.height; r++ {
+			for c := 0; c < m.width; c++ {
+				// THWIP! text
+				if showThwip && r == thwipY && c >= thwipX && c < thwipX+len(thwipText) {
+					sb.WriteString(white.Render(string(thwipText[c-thwipX])))
+					continue
+				}
+
+				dx := c - centerX
+				dy := (r - centerY) * 2 // aspect ratio correction
+				dist := dx*dx + dy*dy
+				sqRadius := radius * radius
+
+				// 8 radial lines from center
+				onLine := false
+				if dist <= sqRadius {
+					// Check if on a radial line (8 directions)
+					if dx == 0 && dy != 0 { onLine = true } // vertical
+					if dy == 0 && dx != 0 { onLine = true } // horizontal
+					adx := dx; if adx < 0 { adx = -adx }
+					ady := dy; if ady < 0 { ady = -ady }
+					if adx == ady { onLine = true } // diagonals
+					if ady >= adx-1 && ady <= adx+1 { onLine = true } // near-diagonal
+				}
+
+				// Concentric rings
+				onRing := false
+				ringDist := int(eased * float64(maxRadius))
+				for ring := 3; ring <= ringDist; ring += 5 {
+					ringSq := ring * ring
+					if dist >= ringSq-ring*2 && dist <= ringSq+ring*2 {
+						onRing = true
+						break
+					}
+				}
+
+				if c == centerX && r == centerY {
+					sb.WriteString(white.Render("●"))
+				} else if onLine {
+					tipDist := sqRadius - dist
+					if tipDist < sqRadius/8 {
+						sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true).Render("█"))
+					} else if tipDist < sqRadius/4 {
+						sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#C0C0C0")).Render("▓"))
+					} else if tipDist < sqRadius/2 {
+						sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render("▒"))
+					} else {
+						sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#4A4A4A")).Render("░"))
+					}
+				} else if onRing && dist <= sqRadius {
+					sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#4A4A4A")).Render("·"))
+				} else {
+					sb.WriteRune(' ')
+				}
+			}
+			if r < m.height-1 {
+				sb.WriteRune('\n')
+			}
+		}
+		return sb.String()
+	}
+
+	for r := 0; r < m.height; r++ {
+		lineStr := ""
+		if m.cardIdx < len(m.cards) && r < len(card.lines) {
+			lineStr = card.lines[r]
+		}
+
+		hasText := strings.TrimSpace(lineStr) != ""
+		resolved := false
+		if hasText {
+			// Check if most chars are resolved
+			resolvedCount := 0
+			runes := []rune(lineStr)
+			for c := 0; c < len(runes) && c < m.width; c++ {
+				if r < len(m.resolveMap) && c < len(m.resolveMap[r]) && m.resolveMap[r][c] {
+					resolvedCount++
+				}
+			}
+			resolved = resolvedCount > len(runes)/2
+		}
+
+		if hasText && (m.mState == mvsShow || (m.mState == mvsResolve && resolved) || m.mState == mvsDissolve) {
+			trimmed := strings.TrimSpace(lineStr)
+
+			if glitchIntensity > 0 && rand.Float64() < glitchIntensity*0.5 {
+				// Full line glitch: RGB shift
+				redLine, blueLine := rgbShift(lineStr, rgbOffset+1)
+				if rand.Intn(2) == 0 {
+					sb.WriteString(dimRed.Render(redLine))
+				} else {
+					sb.WriteString(dimBlue.Render(blueLine))
+				}
+			} else if glitchIntensity > 0 && rand.Float64() < glitchIntensity*0.3 {
+				// Partial glitch: some chars replaced
+				sb.WriteString(white.Render(glitchLine(lineStr, glitchIntensity*0.4)))
+			} else {
+				// Clean render with color
+				if strings.Contains(trimmed, "█") || strings.Contains(trimmed, "▌") {
+					sb.WriteString(white.Render(lineStr))
+				} else if strings.Contains(trimmed, "★") {
+					sb.WriteString(gold.Render(lineStr))
+				} else if strings.Contains(trimmed, "SPIDER") || strings.Contains(trimmed, "MILES") || strings.Contains(trimmed, "GWEN") {
+					sb.WriteString(red.Render(lineStr))
+				} else if strings.Contains(trimmed, "great power") || strings.Contains(trimmed, "great responsibility") {
+					sb.WriteString(white.Render(lineStr))
+				} else if strings.Contains(trimmed, "━") {
+					sb.WriteString(blue.Render(lineStr))
+				} else if trimmed == strings.ToUpper(trimmed) && len(trimmed) > 2 {
+					sb.WriteString(white.Render(lineStr))
+				} else {
+					sb.WriteString(blue.Render(lineStr))
+				}
+			}
+		} else if hasText && m.mState == mvsResolve {
+			// Glitching into existence
+			glitched := glitchLine(lineStr, 0.7)
+			if rand.Intn(3) == 0 {
+				sb.WriteString(glitchRed.Render(glitched))
+			} else {
+				sb.WriteString(glitchBlue.Render(glitched))
+			}
+		} else {
+			// Clean dark background with very rare glitch flicker
+			if rand.Intn(80) == 0 {
+				pos := rand.Intn(m.width)
+				line := strings.Repeat(" ", pos) + webDim.Render("·") + strings.Repeat(" ", m.width-pos-1)
+				sb.WriteString(line)
+			} else {
+				sb.WriteString(strings.Repeat(" ", m.width))
+			}
+		}
+
 		if r < m.height-1 {
 			sb.WriteRune('\n')
 		}

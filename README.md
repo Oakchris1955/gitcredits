@@ -55,6 +55,16 @@ gitcredits --theme matrix
   <img src="assets/matrix-demo.gif" alt="gitcredits matrix theme" width="720">
 </p>
 
+**Spider-Man** — glitch effects with radial web transitions:
+
+```bash
+gitcredits --theme spiderman
+```
+
+<p align="center">
+  <img src="assets/spiderman-demo.gif" alt="gitcredits spider-man theme" width="720">
+</p>
+
 ### Export to GIF
 
 Save the credits as a high-quality GIF — perfect for READMEs, presentations, or sharing.
@@ -62,6 +72,7 @@ Save the credits as a high-quality GIF — perfect for READMEs, presentations, o
 ```bash
 gitcredits --output credits.gif
 gitcredits --output credits.gif --theme matrix
+gitcredits --output credits.gif --theme spiderman
 ```
 
 Requires [VHS](https://github.com/charmbracelet/vhs) and [ffmpeg](https://ffmpeg.org/):
