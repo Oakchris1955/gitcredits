@@ -85,7 +85,10 @@ func generateGIF(outputPath, theme string, lines []string, cardCount int) error 
 
 	// run vhs
 	vhsCmd := exec.Command(vhsPath, tmpPath)
-	vhsCmd.Dir = filepath.Dir(selfPath)
+	// Run vhs in the current working directory (not the binary's directory)
+	// so the repo info is read from the correct project
+	cwd, _ := os.Getwd()
+	vhsCmd.Dir = cwd
 	vhsCmd.Env = append(os.Environ(), "TERM=xterm-256color")
 
 	vhsOut, err := vhsCmd.CombinedOutput()
