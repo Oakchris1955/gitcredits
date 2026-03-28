@@ -25,12 +25,14 @@ type contributor struct {
 	commits int
 }
 
-func getRepoInfo() repoInfo {
+func getRepoInfo(dir string) repoInfo {
 	info := repoInfo{}
 
-	if dir, err := os.Getwd(); err == nil {
-		parts := strings.Split(dir, string(os.PathSeparator))
-		info.name = parts[len(parts)-1]
+	if dir != "" {
+		if err := os.Chdir(dir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error while attempting to navigate to directory \"%s\": %v\n", dir, err)
+			os.Exit(1)
+		}
 	}
 
 	if desc, err := os.ReadFile(".git/description"); err == nil {

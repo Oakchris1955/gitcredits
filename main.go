@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +18,7 @@ func main() {
 	// parse flags
 	theme := "default"
 	output := ""
+	dir := ""
 	for i, arg := range os.Args[1:] {
 		if arg == "--version" || arg == "-v" {
 			fmt.Printf("gitcredits %s (%s)\n", version, commit)
@@ -25,7 +27,10 @@ func main() {
 		if arg == "--help" || arg == "-h" {
 			fmt.Println("gitcredits - Turn your Git repo into movie-style rolling credits")
 			fmt.Println()
-			fmt.Printf("Usage: gitcredits [options]\n\n")
+			fmt.Printf("Usage: gitcredits [options] <directory>\n\n")
+			fmt.Println("Arguments:")
+			fmt.Println("  <directory>      Directory to look for a git repository (if not supplied, defaults to current directory)")
+			fmt.Println()
 			fmt.Println("Options:")
 			fmt.Println("  --theme <name>   Theme: default, matrix, spiderman")
 			fmt.Println("  --output <file>  Export credits as GIF")
@@ -41,7 +46,13 @@ func main() {
 		}
 	}
 
-	info := getRepoInfo()
+	if len(os.Args) > 1 {
+		if !strings.HasPrefix("--", os.Args[len(os.Args)-2]) {
+			dir = os.Args[len(os.Args)-1]
+		}
+	}
+
+	info := getRepoInfo(dir)
 
 	width := 80
 	height := 24
