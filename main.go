@@ -47,7 +47,7 @@ func main() {
 	}
 
 	if len(os.Args) > 1 {
-		if !strings.HasPrefix("--", os.Args[len(os.Args)-2]) {
+		if !strings.HasPrefix(os.Args[len(os.Args)-2], "--") {
 			dir = os.Args[len(os.Args)-1]
 		}
 	}
