@@ -27,8 +27,16 @@ type contributor struct {
 
 func getRepoInfo(dir string) repoInfo {
 	info := repoInfo{}
+	currentDir := ""
 
 	if dir != "" {
+		if wd, err := os.Getwd(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error while attempting check current working directory \"%s\": %v\n", dir, err)
+			os.Exit(1)
+		} else {
+			currentDir = wd
+		}
+
 		if err := os.Chdir(dir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error while attempting to navigate to directory \"%s\": %v\n", dir, err)
 			os.Exit(1)
@@ -115,6 +123,14 @@ func getRepoInfo(dir string) repoInfo {
 		l := strings.TrimSpace(string(out))
 		if l != "" {
 			info.language = l
+		}
+	}
+
+	// go back to the dirrectory we were when the function was invoked
+	if currentDir != "" {
+		if err := os.Chdir(currentDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error while attempting to navigate back to start directory \"%s\": %v\n", dir, err)
+			os.Exit(1)
 		}
 	}
 
