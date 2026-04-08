@@ -1,4 +1,4 @@
-module github.com/Higangssh/gitcredits
+module github.com/oakchris1955/gitcredits
 
 go 1.25.0
 
