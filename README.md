@@ -6,6 +6,9 @@
   <img src="assets/demo.gif" alt="gitcredits demo" width="720">
 </p>
 
+> Note: this is a fork of an AI-generated project. I don't mean to make anything
+> big out of it, but I thought I might as well fix a couple of things for myself
+
 ## Install
 
 ### Go
